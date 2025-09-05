@@ -1,7 +1,7 @@
 // ESP32 has multiple UARTs, we can simulate SoftwareSerial using HardwareSerial
 #include <HardwareSerial.h>
 
-HardwareSerial mySerial(1); // Use UART1 (we can assign pins)
+HardwareSerial arduinoSerial(1); // Use UART1 (we can assign pins)
 
 #define RXD2 16   // ESP32 RX
 #define TXD2 17   // ESP32 TX
@@ -20,7 +20,7 @@ NES_HTTPClient nesClient(ssid, password, serverName);
 
 void setup() {
   Serial.begin(115200);               // Debugging
-  mySerial.begin(9600, SERIAL_8N1, RXD2, TXD2); // Custom pins for Serial
+  arduinoSerial.begin(9600, SERIAL_8N1, RXD2, TXD2); // Custom pins for Serial
 
   nesClient.connectWiFi();
   Serial.println(WiFi.localIP());
@@ -41,39 +41,39 @@ void loop() {
     Serial.println(input);
 
     if(input == "get_temp") {
-      mySerial.println(input);      
-    }
-  }
+      arduinoSerial.println(input);   
 
-  // Receive from Arduino
-  if (mySerial.available()) {
-    String temperature = mySerial.readStringUntil('\n');
-    Serial.print("Received from Arduino: ");
-    Serial.println(temperature);
+      // Receive from Arduino
+      if (arduinoSerial.available()) {
+        String temperature = arduinoSerial.readStringUntil('\n');
+        Serial.print("Received from Arduino: ");
+        Serial.println(temperature);
 
-    if(nesClient.isConnected()) {
+        if(nesClient.isConnected()) {
 
-      StaticJsonDocument<200> postDoc;
-      postDoc["groupName"] = "Padua";
-      postDoc["temp"] = temperature;
+          StaticJsonDocument<200> postDoc;
+          postDoc["groupName"] = "Padua";
+          postDoc["temp"] = temperature;
 
-      // Approach ni Sir
-      // String jsonStr;
-      // serializeJson(postDoc, jsonStr);  // print JSON for debugging
-      // Serial.println(jsonStr);
+          // Approach ni Sir
+          // String jsonStr;
+          // serializeJson(postDoc, jsonStr);  // print JSON for debugging
+          // Serial.println(jsonStr);
 
-      // Approach ni chatgpt
-      serializeJson(postDoc, Serial);  // print JSON for debugging
-      Serial.println();
+          // Approach ni chatgpt
+          serializeJson(postDoc, Serial);  // print JSON for debugging
+          Serial.println();
 
-      int response = nesClient.sendJSON(postDoc);
-      Serial.printf("POST Response code: %d\n", response);
+          int response = nesClient.sendJSON(postDoc);
+          Serial.printf("POST Response code: %d\n", response);
 
-      // send success response code to arduino
-      mySerial.println(response);
+          // send success response code to arduino
+          arduinoSerial.println(response);
 
-    } else {
-      Serial.println("Error: Not connected to WiFi");
+        } else {
+          Serial.println("Error: Not connected to WiFi");
+        }
+      }   
     }
   }
 }
